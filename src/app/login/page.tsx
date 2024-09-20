@@ -1,43 +1,50 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import PocketBase, { RecordAuthResponse } from "pocketbase";
 import { motion, AnimatePresence } from "framer-motion";
+
+const pb = new PocketBase("http://127.0.0.1:8090");
 
 interface FormData {
   username: string;
   password: string;
-  name: string;
-  roll: string;
-  sec: string;
-  studentClass: string;
-  stage: string;
 }
 
-export default function Component() {
-  const [step, setStep] = useState(1);
+export default function LoginComponent() {
+  const router = useRouter();
   const [formData, setFormData] = useState<FormData>({
     username: "",
     password: "",
-    name: "",
-    roll: "",
-    sec: "",
-    studentClass: "1",
-    stage: "Playground",
   });
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (step === 1) {
-      setStep(2);
-    } else {
-      console.log("Form submitted:", formData);
+
+    try {
+      const authData = (await pb
+        .collection("users")
+        .authWithPassword(
+          formData.username,
+          formData.password
+        )) as RecordAuthResponse;
+
+      // Get user ID from authData
+      const userId = authData.record.id; // Change from user to record
+      console.log("User ID:", userId);
+
+      // Redirect to dashboard after successful login
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Authentication error:", error);
+      setErrorMessage("Authentication failed. Please check your credentials.");
     }
   };
 
@@ -84,7 +91,7 @@ export default function Component() {
       >
         <AnimatePresence mode="wait">
           <motion.div
-            key={step}
+            key={1}
             variants={contentVariants}
             initial="hidden"
             animate="visible"
@@ -96,127 +103,50 @@ export default function Component() {
             >
               School Login
             </motion.h2>
+            {errorMessage && (
+              <div className="mb-4 text-red-500 text-center">
+                {errorMessage}
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-5">
-              {step === 1 ? (
-                <>
-                  <motion.div variants={formElementVariants} custom={1}>
-                    <label htmlFor="username" className={labelClasses}>
-                      Username or Email
-                    </label>
-                    <input
-                      type="text"
-                      id="username"
-                      name="username"
-                      value={formData.username}
-                      onChange={handleChange}
-                      required
-                      className={inputClasses}
-                      placeholder="Enter your username or email"
-                    />
-                  </motion.div>
-                  <motion.div variants={formElementVariants} custom={2}>
-                    <label htmlFor="password" className={labelClasses}>
-                      Password
-                    </label>
-                    <input
-                      type="password"
-                      id="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      className={inputClasses}
-                      placeholder="Enter your password"
-                    />
-                  </motion.div>
-                </>
-              ) : (
-                <>
-                  <motion.div variants={formElementVariants} custom={1}>
-                    <label htmlFor="name" className={labelClasses}>
-                      Student&apos;s Name
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                      className={inputClasses}
-                      placeholder="Enter student's name"
-                    />
-                  </motion.div>
-                  <motion.div variants={formElementVariants} custom={2}>
-                    <label htmlFor="roll" className={labelClasses}>
-                      Roll Number
-                    </label>
-                    <input
-                      type="text"
-                      id="roll"
-                      name="roll"
-                      value={formData.roll}
-                      onChange={handleChange}
-                      required
-                      className={inputClasses}
-                      placeholder="Enter roll number"
-                    />
-                  </motion.div>
-                  <motion.div variants={formElementVariants} custom={3}>
-                    <label htmlFor="sec" className={labelClasses}>
-                      Section
-                    </label>
-                    <input
-                      type="text"
-                      id="sec"
-                      name="sec"
-                      value={formData.sec}
-                      onChange={handleChange}
-                      required
-                      className={inputClasses}
-                      placeholder="Enter section"
-                    />
-                  </motion.div>
-                  <motion.div variants={formElementVariants} custom={4}>
-                    <label htmlFor="studentClass" className={labelClasses}>
-                      Class
-                    </label>
-                    <select
-                      id="studentClass"
-                      name="studentClass"
-                      value={formData.studentClass}
-                      onChange={handleChange}
-                      required
-                      className={inputClasses}
-                    >
-                      {[
-                        "Playground",
-                        "Lower KG",
-                        "Upper KG",
-                        "1",
-                        "2",
-                        "3",
-                        "4",
-                      ].map((cls) => (
-                        <option key={cls} value={cls}>
-                          {cls}
-                        </option>
-                      ))}
-                    </select>
-                  </motion.div>
-                </>
-              )}
-              <motion.div
-                variants={formElementVariants}
-                custom={step === 1 ? 5 : 6}
-              >
+              <motion.div variants={formElementVariants} custom={1}>
+                <label htmlFor="username" className={labelClasses}>
+                  Username or Email
+                </label>
+                <input
+                  type="text"
+                  id="username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  required
+                  className={inputClasses}
+                  placeholder="Enter your username or email"
+                />
+              </motion.div>
+              <motion.div variants={formElementVariants} custom={2}>
+                <label htmlFor="password" className={labelClasses}>
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  className={inputClasses}
+                  placeholder="Enter your password"
+                />
+              </motion.div>
+              <motion.div variants={formElementVariants} custom={3}>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   type="submit"
                   className="w-full py-2 md:py-3 px-4 md:px-6 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg font-semibold transition duration-300 hover:bg-indigo-600 shadow-md"
                 >
-                  {step === 1 ? "Next" : "Login"}
+                  Login
                 </motion.button>
               </motion.div>
             </form>
